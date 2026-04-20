@@ -1,0 +1,224 @@
+<!--
+Detailed Patient-Level Information for Each Hospital
+
+SDM Hospital
+NGO Staff: Ravi
+  Patient: Anita
+    Last Visit: 10 Apr 2026
+    Next Appointment: 1 May 2026
+    Disease / Treatment: Diabetes
+    Visit History: Regular checkups for blood sugar, insulin dose adjustments, dietary counseling.
+    Medicines: Insulin, Metformin
+  Patient: Kiran
+    Last Visit: 22 Mar 2026
+    Next Appointment: 25 Apr 2026
+    Disease / Treatment: Blood Pressure (BP)
+    Visit History: BP monitoring, lifestyle advice, medication review.
+    Medicines: Amlodipine
+NGO Staff: Sneha
+  Patient: Meena
+    Last Visit: 1 Apr 2026
+    Next Appointment: 30 Apr 2026
+    Disease / Treatment: AIDS
+    Visit History: ART adherence counseling, regular blood tests, nutrition support.
+    Medicines: Iron, Calcium
+
+KIMS Hospital
+NGO Staff: Arjun
+  Patient: Ramesh
+    Last Visit: 15 Mar 2026
+    Next Appointment: 20 Apr 2026
+    Disease / Treatment: Cancer
+    Visit History: Chemotherapy sessions, pain management, follow-up imaging.
+    Medicines: Imatinib
+NGO Staff: Priya
+  Patient: Sunita
+    Last Visit: 10 Mar 2026
+    Next Appointment: 18 Apr 2026
+    Disease / Treatment: Tuberculosis (TB)
+    Visit History: DOTS therapy, sputum tests, counseling for medication adherence.
+    Medicines: Rifampicin
+
+Balaji Hospital
+NGO Staff: Rahul
+  Patient: Ajay
+    Last Visit: 5 Mar 2026
+    Next Appointment: 15 Apr 2026
+    Disease / Treatment: Asthma
+    Visit History: Inhaler technique review, spirometry, allergy management.
+    Medicines: Salbutamol
+NGO Staff: Pooja
+  Patient: Neha
+    Last Visit: 1 Mar 2026
+    Next Appointment: 10 Apr 2026
+    Disease / Treatment: Pregnancy Care
+    Visit History: Antenatal checkups, ultrasound, nutrition counseling.
+    Medicines: Folic Acid
+
+Civil Hospital
+NGO Staff: Mahesh
+  Patient: Deepak
+    Last Visit: 25 Feb 2026
+    Next Appointment: 5 Apr 2026
+    Disease / Treatment: Diabetes
+    Visit History: Blood sugar monitoring, foot care education, medication review.
+    Medicines: Insulin
+NGO Staff: Kavya
+  Patient: Lata
+    Last Visit: 20 Feb 2026
+    Next Appointment: 2 Apr 2026
+    Disease / Treatment: Blood Pressure (BP)
+    Visit History: BP checks, salt intake counseling, medication adjustment.
+    Medicines: Amlodipine
+-->
+{% extends "base.html" %}
+{% block title %}Hospital Dashboard - Healthcare Management System{% endblock %}
+{% block content %}
+<div class="container py-5">
+  <h2 class="text-center mb-5 fw-bold text-primary" style="letter-spacing:1px;">All Hospitals</h2>
+  <div class="row justify-content-center g-4">
+    {% for hospital in hospitals %}
+      {% if loop.index0 % 2 == 0 and not loop.first %}</div><div class="row justify-content-center g-4">{% endif %}
+      <div class="col-md-6 mb-4 d-flex align-items-stretch">
+        <div class="card shadow-lg hospital-card h-100 w-100" data-hospital="{{ hospital.id }}" style="border-radius: 28px; border: 2.5px solid #e0e0e0; cursor:pointer; transition:transform 0.25s, box-shadow 0.25s; background: linear-gradient(135deg, #e3f0ff 0%, #f9f9f9 100%); box-shadow: 0 8px 32px rgba(0,0,0,0.10); min-height: 340px;">
+          <div class="card-body p-5 text-center">
+            <div class="mb-3"><i class="fas fa-hospital-alt fa-3x text-primary"></i></div>
+            <h3 class="fw-bold text-primary mb-2" style="letter-spacing:1px; font-size:2.2em;">{{ hospital.name }}</h3>
+            <div class="mb-2"><i class="fas fa-map-marker-alt me-2"></i><span class="fw-semibold">{{ hospital.area }}</span></div>
+            <div class="mb-2"><span class="badge bg-info">Pincode: {{ hospital.pincode }}</span></div>
+            <div class="mb-2"><span class="text-muted">{{ hospital.address }}</span></div>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+  <!-- Removed Medicine List Section -->
+  <div id="dashboardContent" class="mt-5"></div>
+</div>
+<!-- Patient Details Modal -->
+<div class="modal fade" id="patientModal" tabindex="-1" aria-labelledby="patientModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="patientModalLabel">Patient Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div id="patientDetails">
+          <!-- Patient details will be loaded here by JS -->
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script type="text/javascript">
+const allHospitals = {{ hospitals|tojson|safe }};
+// Removed allPatients (patients_json) as it is not used and caused serialization error
+const hospitalStaffPatients = {{ hospital_staff_patients|tojson|safe }};
+const patientNames = [
+  'Ravi', 'Sunita', 'Manoj', 'Asha', 'Deepak', 'Kiran', 'Meena', 'Suresh', 'Lata', 'Vijay',
+  'Anil', 'Pooja', 'Ramesh', 'Geeta', 'Sanjay', 'Neha', 'Ajay', 'Kavita', 'Arun', 'Shilpa',
+  'Nitin', 'Divya', 'Raj', 'Komal', 'Prakash', 'Seema', 'Yogesh', 'Nisha', 'Mahesh', 'Payal'
+];
+function getStaffForPatient(patientId) {
+  return staffList[patientId % staffList.length];
+}
+// Handle hospital card click (fetch real data)
+$(document).on('click', '.hospital-card', function() {
+  const hospitalId = $(this).data('hospital');
+  if (!hospitalId) return;
+  const hospital = allHospitals.find(h => h.id === hospitalId);
+  let html = `<div class='card shadow p-4 mb-4' style='border-radius:18px;'>`;
+  html += `<h3 class='mb-3 text-primary'><i class='fas fa-hospital-alt'></i> ${hospital.name}</h3>`;
+  html += `<p><strong>Address:</strong> ${hospital.address}</p>`;
+  html += `<hr><h4 class='mb-3'><i class='fas fa-user-friends'></i> NGO Staff & Patients</h4>`;
+  const staffList = hospitalStaffPatients[hospitalId] || [];
+  if (!staffList.length) {
+    html += `<div class='alert alert-warning'>No staff assigned to this hospital.</div>`;
+  } else {
+    staffList.forEach(staff => {
+      html += `<div class='card mb-3 shadow-sm' style='border-radius:14px;'>`;
+      html += `<div class='card-body'>`;
+      html += `<div class='d-flex align-items-center mb-2'>`;
+      html += `<img src='${staff.img}' class='rounded-circle me-3' style='width:48px;height:48px;'>`;
+      html += `<div><h5 class='mb-0'>${staff.name}</h5><small class='text-muted'>${staff.area}</small></div>`;
+      html += `</div>`;
+      if (!staff.patients || staff.patients.length === 0) {
+        html += `<div class='alert alert-info mt-2 mb-0'>No patients assigned to this staff.</div>`;
+      } else {
+        html += `<div class='row mt-2'>`;
+        staff.patients.forEach((p, idx) => {
+          html += `<div class='col-md-6 mb-3'>`;
+          html += `<div class='card patient-link shadow' style='border-radius: 12px; font-size:1em; cursor:pointer;' data-bs-toggle='modal' data-bs-target='#patientModal' data-patient='${encodeURIComponent(JSON.stringify(p))}'>`;
+          html += `<div class='card-body'>`;
+          html += `<h6 class='mb-1'>${p.name}</h6>`;
+          html += `<span class='badge bg-info mb-1'>ID: ${p.id}</span> <span class='badge bg-secondary mb-1'>Disease: ${p.disease || ''}</span>`;
+          html += `<div class='mt-1'><label for='nextVisit_${p.id}' class='form-label'>Next Visit:</label> `;
+          html += `<input type='date' class='form-control d-inline-block w-auto next-visit-date' id='nextVisit_${p.id}' value='${p.next_visit || ''}' data-patient-id='${p.id}' />`;
+          html += `<button class='btn btn-sm btn-success ms-2 update-next-visit' data-patient-id='${p.id}'>Update</button>`;
+          html += `<div class='next-visit-error text-danger small mt-1' id='nextVisitError_${p.id}' style='display:none;'></div>`;
+          html += `</div>`;
+          html += `</div></div></div></div>`;
+        });
+        html += `</div>`;
+      }
+      html += `</div></div>`;
+    });
+  }
+  html += `</div>`;
+  $('#dashboardContent').html(html);
+});
+// Handle patient click for history (show real history)
+$(document).on('click', '.patient-link', function() {
+  const patient = JSON.parse(decodeURIComponent($(this).attr('data-patient')));
+  let historyHtml = `<h4><i class="fas fa-user"></i> ${patient.name}</h4>`;
+  historyHtml += `<p><strong>Patient ID:</strong> ${patient.id}</p>`;
+  historyHtml += `<p><strong>Disease:</strong> ${patient.disease || ''}</p>`;
+  historyHtml += `<h6>Medical History</h6>`;
+  if (patient.history && patient.history.length > 0) {
+    historyHtml += `<table class='table table-striped'><thead><tr><th>Date</th><th>Diagnosis</th><th>Treatment</th><th>Prescription</th></tr></thead><tbody>`;
+    patient.history.forEach(h => {
+      historyHtml += `<tr><td>${h.visit_date}</td><td>${h.diagnosis || ''}</td><td>${h.treatment || ''}</td><td>${h.prescription || ''}</td></tr>`;
+    });
+    historyHtml += `</tbody></table>`;
+  } else {
+    historyHtml += `<div class='alert alert-info'>No medical history found.</div>`;
+  }
+  $('#patientDetails').html(historyHtml);
+});
+// Handle next visit update
+$(document).on('click', '.update-next-visit', function(e) {
+  e.stopPropagation();
+  const patientId = $(this).data('patient-id');
+  const newDate = $(`#nextVisit_${patientId}`).val();
+  if (!newDate) return;
+  // Check for duplicate date for this patient
+  const patient = allPatients.find(p => p.id == patientId);
+  if (patient && patient.next_visit === newDate) {
+    $(`#nextVisitError_${patientId}`).text('This date is already set as the next visit.').show();
+    return;
+  }
+  // Hide error
+  $(`#nextVisitError_${patientId}`).hide();
+  // Send AJAX request to backend
+  $.ajax({
+    url: '/update_next_visit',
+    method: 'POST',
+    contentType: 'application/json',
+    data: JSON.stringify({patient_id: patientId, next_visit: newDate}),
+    success: function(resp) {
+      $(`#nextVisitError_${patientId}`).hide();
+      alert('Next visit updated and patient notified!');
+      // Optionally update UI
+      patient.next_visit = newDate;
+    },
+    error: function(xhr) {
+      $(`#nextVisitError_${patientId}`).text(xhr.responseJSON?.error || 'Error updating next visit.').show();
+    }
+  });
+});
+</script>
+{% endblock %}
