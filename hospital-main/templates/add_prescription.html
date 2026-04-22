@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+
+{% block title %}Add Prescription{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2><i class="fas fa-prescription-bottle-medical"></i> Add New Prescription</h2>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card shadow" style="border-radius: 10px;">
+                <div class="card-body p-5">
+                    <form method="POST" action="{{ url_for('add_prescription') }}">
+                        <!-- Patient Selection -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3"><i class="fas fa-user-check"></i> Patient Selection</h5>
+                            <div class="form-group mb-3">
+                                <label for="patient_id" class="form-label fw-bold">Select Patient</label>
+                                <select class="form-select form-select-lg" name="patient_id" id="patient_id" required>
+                                    <option value="">-- Choose a patient --</option>
+                                    {% for patient in patients %}
+                                        <option value="{{ patient.id }}">
+                                            {{ patient.user.name }} (ID: {{ patient.id }})
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Doctor Information (Pre-filled) -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3"><i class="fas fa-user-md"></i> Doctor Information</h5>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="doctor_name" class="form-label fw-bold">Doctor Name</label>
+                                    <input type="text" class="form-control" name="doctor_name" 
+                                           value="{{ doctor.name }}" readonly>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="medical_license" class="form-label fw-bold">Medical License Number</label>
+                                    <input type="text" class="form-control" name="medical_license" 
+                                           placeholder="e.g., ML123456" required>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="hospital_name" class="form-label fw-bold">Hospital/Clinic Name</label>
+                                    <input type="text" class="form-control" name="hospital_name" 
+                                           placeholder="e.g., Apollo Hospital" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="hospital_address" class="form-label fw-bold">Hospital Address</label>
+                                    <input type="text" class="form-control" name="hospital_address" 
+                                           placeholder="Complete address" required>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="doctor_phone" class="form-label fw-bold">Doctor Phone</label>
+                                    <input type="tel" class="form-control" name="doctor_phone" 
+                                           placeholder="Phone number">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Patient Information (Editable) -->
+                        <div class="mb-4">
+                            <h5 class="text-info mb-3"><i class="fas fa-user"></i> Patient Information</h5>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="patient_gender" class="form-label fw-bold">Gender</label>
+                                    <select class="form-select" name="patient_gender">
+                                        <option value="">-- Select --</option>
+                                        <option value="Male">Male</option>
+                                        <option value="Female">Female</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="patient_phone" class="form-label fw-bold">Patient Phone</label>
+                                    <input type="tel" class="form-control" name="patient_phone">
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="patient_address" class="form-label fw-bold">Patient Address</label>
+                                    <textarea class="form-control" name="patient_address" rows="2"></textarea>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="insurance_details" class="form-label fw-bold">Insurance Details</label>
+                                    <textarea class="form-control" name="insurance_details" 
+                                              placeholder="e.g., Aetna Policy #XXX" rows="2"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Medicines Section -->
+                        <div class="mb-4">
+                            <h5 class="text-warning mb-3"><i class="fas fa-capsules"></i> Prescribe Medicines</h5>
+                            <div id="medicines_container">
+                                <div class="medicine_item card p-3 mb-3" style="background-color: #fffbea; border-left: 4px solid #ffc107;">
+                                    <div class="row">
+                                        <div class="col-md-3 mb-2">
+                                            <label class="form-label fw-bold">Medicine Name</label>
+                                            <input type="text" class="form-control" name="medicine_name[]" 
+                                                   placeholder="e.g., Paracetamol" required>
+                                        </div>
+                                        <div class="col-md-2 mb-2">
+                                            <label class="form-label fw-bold">Dosage</label>
+                                            <input type="text" class="form-control" name="medicine_dosage[]" 
+                                                   placeholder="e.g., 500mg" required>
+                                        </div>
+                                        <div class="col-md-2 mb-2">
+                                            <label class="form-label fw-bold">Frequency</label>
+                                            <input type="text" class="form-control" name="medicine_frequency[]" 
+                                                   placeholder="e.g., Twice daily" required>
+                                        </div>
+                                        <div class="col-md-2 mb-2">
+                                            <label class="form-label fw-bold">Duration</label>
+                                            <input type="text" class="form-control" name="medicine_duration[]" 
+                                                   placeholder="e.g., 5 days" required>
+                                        </div>
+                                        <div class="col-md-3 mb-2">
+                                            <label class="form-label fw-bold">Instructions</label>
+                                            <input type="text" class="form-control" name="medicine_instructions[]" 
+                                                   placeholder="e.g., After food">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-outline-warning" onclick="addMedicine()">
+                                <i class="fas fa-plus"></i> Add Another Medicine
+                            </button>
+                        </div>
+
+                        <!-- Remarks Section -->
+                        <div class="mb-4">
+                            <h5 class="text-success mb-3"><i class="fas fa-sticky-note"></i> Remarks & Precautions</h5>
+                            <textarea class="form-control" name="remarks" rows="3" 
+                                      placeholder="e.g., Avoid dairy products, Follow precautions..."></textarea>
+                        </div>
+
+                        <!-- Submit Buttons -->
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('hospital_dashboard') }}" class="btn btn-secondary btn-lg">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-save"></i> Save Prescription
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function addMedicine() {
+        const container = document.getElementById('medicines_container');
+        const medicineHTML = `
+            <div class="medicine_item card p-3 mb-3" style="background-color: #fffbea; border-left: 4px solid #ffc107;">
+                <div class="row">
+                    <div class="col-md-3 mb-2">
+                        <label class="form-label fw-bold">Medicine Name</label>
+                        <input type="text" class="form-control" name="medicine_name[]" 
+                               placeholder="e.g., Paracetamol">
+                    </div>
+                    <div class="col-md-2 mb-2">
+                        <label class="form-label fw-bold">Dosage</label>
+                        <input type="text" class="form-control" name="medicine_dosage[]" 
+                               placeholder="e.g., 500mg">
+                    </div>
+                    <div class="col-md-2 mb-2">
+                        <label class="form-label fw-bold">Frequency</label>
+                        <input type="text" class="form-control" name="medicine_frequency[]" 
+                               placeholder="e.g., Twice daily">
+                    </div>
+                    <div class="col-md-2 mb-2">
+                        <label class="form-label fw-bold">Duration</label>
+                        <input type="text" class="form-control" name="medicine_duration[]" 
+                               placeholder="e.g., 5 days">
+                    </div>
+                    <div class="col-md-2 mb-2">
+                        <label class="form-label fw-bold">Instructions</label>
+                        <input type="text" class="form-control" name="medicine_instructions[]" 
+                               placeholder="e.g., After food">
+                    </div>
+                    <div class="col-md-1 d-flex align-items-end mb-2">
+                        <button type="button" class="btn btn-outline-danger w-100" onclick="removeMedicine(this)">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        container.insertAdjacentHTML('beforeend', medicineHTML);
+    }
+
+    function removeMedicine(btn) {
+        btn.closest('.medicine_item').remove();
+    }
+</script>
+{% endblock %}

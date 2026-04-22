@@ -4,7 +4,7 @@ from flask_migrate import Migrate
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
-from models import db, User, Patient, MedicalRecord, Message, Hospital, Notification
+from models import db, User, Patient, MedicalRecord, Message, Hospital, Notification, Prescription, LabRecord
 import os
 import random
 import string
@@ -595,6 +595,253 @@ def update_next_visit():
     db.session.add(notification)
     db.session.commit()
     return jsonify({'message': 'Next visit updated and patient notified!'})
+
+# ===== PRESCRIPTION ROUTES =====
+@app.route('/prescriptions')
+@login_required
+def prescriptions():
+    """View all prescriptions for current patient"""
+    if current_user.role != 'patient':
+        flash('Access denied.', 'danger')
+        return redirect(url_for('login'))
+    
+    patient = Patient.query.filter_by(user_id=current_user.id).first()
+    if not patient:
+        flash('Patient record not found.', 'danger')
+        return redirect(url_for('patient_dashboard'))
+    
+    # Get prescriptions ordered by date (latest first)
+    prescriptions = Prescription.query.filter_by(patient_id=patient.id).order_by(Prescription.prescription_date.desc()).all()
+    
+    return render_template('prescriptions.html', user=current_user, patient=patient, prescriptions=prescriptions)
+
+@app.route('/prescription/<int:prescription_id>')
+@login_required
+def view_prescription(prescription_id):
+    """View detailed prescription"""
+    prescription = Prescription.query.get_or_404(prescription_id)
+    
+    # Security: only patient or assigned doctor can view
+    patient = Patient.query.get(prescription.patient_id)
+    if current_user.role == 'patient':
+        if patient.user_id != current_user.id:
+            flash('Access denied.', 'danger')
+            return redirect(url_for('login'))
+    elif current_user.role == 'hospital_admin':
+        if prescription.doctor_id != current_user.id:
+            flash('Access denied.', 'danger')
+            return redirect(url_for('login'))
+    else:
+        flash('Access denied.', 'danger')
+        return redirect(url_for('login'))
+    
+    return render_template('prescription_detail.html', prescription=prescription, patient=patient)
+
+@app.route('/prescription/add', methods=['GET', 'POST'])
+@login_required
+def add_prescription():
+    """Add new prescription (Hospital staff only)"""
+    if current_user.role != 'hospital_admin':
+        flash('Access denied.', 'danger')
+        return redirect(url_for('login'))
+    
+    if request.method == 'POST':
+        try:
+            patient_id = request.form.get('patient_id')
+            patient = Patient.query.get_or_404(patient_id)
+            
+            # Parse medicines from form
+            medicines_data = []
+            medicine_names = request.form.getlist('medicine_name[]')
+            medicine_dosages = request.form.getlist('medicine_dosage[]')
+            medicine_frequencies = request.form.getlist('medicine_frequency[]')
+            medicine_durations = request.form.getlist('medicine_duration[]')
+            medicine_instructions = request.form.getlist('medicine_instructions[]')
+            
+            for i in range(len(medicine_names)):
+                if medicine_names[i]:
+                    medicines_data.append({
+                        'medicine_name': medicine_names[i],
+                        'dosage': medicine_dosages[i],
+                        'frequency': medicine_frequencies[i],
+                        'duration': medicine_durations[i],
+                        'instructions': medicine_instructions[i]
+                    })
+            
+            prescription = Prescription(
+                patient_id=patient_id,
+                doctor_id=current_user.id,
+                doctor_name=current_user.name,
+                medical_license=request.form.get('medical_license', ''),
+                hospital_name=request.form.get('hospital_name', ''),
+                hospital_address=request.form.get('hospital_address', ''),
+                doctor_email=current_user.email,
+                doctor_phone=request.form.get('doctor_phone', ''),
+                patient_name=patient.user.name,
+                patient_dob=patient.user.created_at,
+                patient_gender=request.form.get('patient_gender', ''),
+                patient_address=request.form.get('patient_address', ''),
+                patient_email=patient.user.email,
+                patient_phone=request.form.get('patient_phone', ''),
+                insurance_details=request.form.get('insurance_details', ''),
+                medicines=medicines_data,
+                remarks=request.form.get('remarks', ''),
+                prescription_date=datetime.utcnow()
+            )
+            
+            db.session.add(prescription)
+            db.session.commit()
+            
+            flash('Prescription added successfully!', 'success')
+            return redirect(url_for('prescriptions'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error adding prescription: {str(e)}', 'danger')
+            return redirect(url_for('add_prescription'))
+    
+    # Get list of patients
+    patients = Patient.query.all()
+    return render_template('add_prescription.html', patients=patients, doctor=current_user)
+
+@app.route('/api/prescriptions/<int:patient_id>')
+@login_required
+def api_get_prescriptions(patient_id):
+    """API endpoint to get prescriptions for a patient"""
+    patient = Patient.query.get_or_404(patient_id)
+    
+    # Security check
+    if current_user.role == 'patient' and patient.user_id != current_user.id:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    prescriptions = Prescription.query.filter_by(patient_id=patient_id).order_by(Prescription.prescription_date.desc()).all()
+    
+    return jsonify([{
+        'id': p.id,
+        'doctor_name': p.doctor_name,
+        'prescription_date': p.prescription_date.strftime('%Y-%m-%d'),
+        'medicines_count': len(p.medicines) if p.medicines else 0,
+        'is_active': p.is_active
+    } for p in prescriptions])
+
+# ===== LAB RECORDS ROUTES =====
+@app.route('/lab_records')
+@login_required
+def lab_records():
+    """View all lab records for current patient"""
+    if current_user.role != 'patient':
+        flash('Access denied.', 'danger')
+        return redirect(url_for('login'))
+    
+    patient = Patient.query.filter_by(user_id=current_user.id).first()
+    if not patient:
+        flash('Patient record not found.', 'danger')
+        return redirect(url_for('patient_dashboard'))
+    
+    # Get lab records ordered by date (latest first)
+    records = LabRecord.query.filter_by(patient_id=patient.id).order_by(LabRecord.test_date.desc()).all()
+    
+    return render_template('lab_records.html', user=current_user, patient=patient, records=records)
+
+@app.route('/lab_record/<int:record_id>')
+@login_required
+def view_lab_record(record_id):
+    """View detailed lab record"""
+    record = LabRecord.query.get_or_404(record_id)
+    
+    # Security: only patient or assigned doctor can view
+    patient = Patient.query.get(record.patient_id)
+    if current_user.role == 'patient':
+        if patient.user_id != current_user.id:
+            flash('Access denied.', 'danger')
+            return redirect(url_for('login'))
+    elif current_user.role == 'hospital_admin':
+        if record.doctor_id != current_user.id:
+            flash('Access denied.', 'danger')
+            return redirect(url_for('login'))
+    else:
+        flash('Access denied.', 'danger')
+        return redirect(url_for('login'))
+    
+    return render_template('lab_record_detail.html', record=record, patient=patient)
+
+@app.route('/lab_record/add', methods=['GET', 'POST'])
+@login_required
+def add_lab_record():
+    """Add new lab record (Hospital staff only)"""
+    if current_user.role != 'hospital_admin':
+        flash('Access denied.', 'danger')
+        return redirect(url_for('login'))
+    
+    if request.method == 'POST':
+        try:
+            patient_id = request.form.get('patient_id')
+            patient = Patient.query.get_or_404(patient_id)
+            
+            # Parse test results from form
+            results_data = []
+            result_parameters = request.form.getlist('result_parameter[]')
+            result_values = request.form.getlist('result_value[]')
+            result_units = request.form.getlist('result_unit[]')
+            result_normal_ranges = request.form.getlist('result_normal_range[]')
+            result_statuses = request.form.getlist('result_status[]')
+            
+            for i in range(len(result_parameters)):
+                if result_parameters[i]:
+                    results_data.append({
+                        'parameter': result_parameters[i],
+                        'value': result_values[i],
+                        'unit': result_units[i],
+                        'normal_range': result_normal_ranges[i],
+                        'status': result_statuses[i]
+                    })
+            
+            record = LabRecord(
+                patient_id=patient_id,
+                doctor_id=current_user.id,
+                test_name=request.form.get('test_name', ''),
+                hospital_name=request.form.get('hospital_name', ''),
+                hospital_location=request.form.get('hospital_location', ''),
+                results=results_data,
+                overall_status=request.form.get('overall_status', 'Pending'),
+                notes=request.form.get('notes', ''),
+                test_date=datetime.utcnow(),
+                is_completed=request.form.get('is_completed', False)
+            )
+            
+            db.session.add(record)
+            db.session.commit()
+            
+            flash('Lab record added successfully!', 'success')
+            return redirect(url_for('lab_records'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error adding lab record: {str(e)}', 'danger')
+            return redirect(url_for('add_lab_record'))
+    
+    # Get list of patients
+    patients = Patient.query.all()
+    return render_template('add_lab_record.html', patients=patients, doctor=current_user)
+
+@app.route('/api/lab_records/<int:patient_id>')
+@login_required
+def api_get_lab_records(patient_id):
+    """API endpoint to get lab records for a patient"""
+    patient = Patient.query.get_or_404(patient_id)
+    
+    # Security check
+    if current_user.role == 'patient' and patient.user_id != current_user.id:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    records = LabRecord.query.filter_by(patient_id=patient_id).order_by(LabRecord.test_date.desc()).all()
+    
+    return jsonify([{
+        'id': r.id,
+        'test_name': r.test_name,
+        'test_date': r.test_date.strftime('%Y-%m-%d'),
+        'hospital_name': r.hospital_name,
+        'overall_status': r.overall_status,
+        'is_completed': r.is_completed
+    } for r in records])
 
 if __name__ == '__main__':
     init_db()

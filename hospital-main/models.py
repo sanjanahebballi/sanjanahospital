@@ -86,10 +86,76 @@ class Notification(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     priority = db.Column(db.String(10), default='normal')  # low, normal, high
 
+class Prescription(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    patient_id = db.Column(db.Integer, db.ForeignKey('patient.id'), nullable=False)
+    doctor_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    
+    # Doctor Information
+    doctor_name = db.Column(db.String(100), nullable=False)
+    medical_license = db.Column(db.String(50), nullable=False)
+    hospital_name = db.Column(db.String(200), nullable=False)
+    hospital_address = db.Column(db.Text, nullable=False)
+    doctor_email = db.Column(db.String(120))
+    doctor_phone = db.Column(db.String(20))
+    
+    # Patient Information (denormalized for quick access)
+    patient_name = db.Column(db.String(100), nullable=False)
+    patient_dob = db.Column(db.Date)
+    patient_gender = db.Column(db.String(10))
+    patient_address = db.Column(db.Text)
+    patient_email = db.Column(db.String(120))
+    patient_phone = db.Column(db.String(20))
+    insurance_details = db.Column(db.Text)
+    
+    # Prescription Details (stored as JSON for flexibility)
+    medicines = db.Column(db.JSON)  # [{medicine_name, dosage, frequency, duration, instructions}, ...]
+    
+    # Additional Information
+    remarks = db.Column(db.Text)  # Precautions, notes
+    doctor_signature = db.Column(db.String(200))
+    prescription_date = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Status
+    is_active = db.Column(db.Boolean, default=True)
+
+class LabRecord(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    patient_id = db.Column(db.Integer, db.ForeignKey('patient.id'), nullable=False)
+    doctor_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    
+    # Test Information
+    test_name = db.Column(db.String(100), nullable=False)  # Blood Test, X-Ray, MRI, etc.
+    test_date = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Hospital Information
+    hospital_name = db.Column(db.String(200), nullable=False)
+    hospital_location = db.Column(db.Text)
+    
+    # Results
+    results = db.Column(db.JSON)  # [{parameter, value, unit, normal_range, status}, ...]
+    overall_status = db.Column(db.String(20), default='Pending')  # Normal, Abnormal, Pending
+    
+    # Additional Details
+    notes = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Status
+    is_completed = db.Column(db.Boolean, default=False)
+
 # Add relationships
-Patient.user = db.relationship('User', backref='patient_profile', foreign_keys=[Patient.user_id])
+#Patient.user = db.relationship('User', backref='patient_profile', foreign_keys=[Patient.user_id])
 Patient.records = db.relationship('MedicalRecord', backref='patient', lazy='dynamic')
 Patient.assistance = db.relationship('AssistanceRecord', backref='patient', lazy='dynamic')
+Patient.prescriptions = db.relationship('Prescription', backref='patient', lazy='dynamic', foreign_keys=[Prescription.patient_id])
+Patient.lab_records = db.relationship('LabRecord', backref='patient', lazy='dynamic', foreign_keys=[LabRecord.patient_id])
 MedicalRecord.doctor = db.relationship('User', backref='medical_records', foreign_keys=[MedicalRecord.doctor_id])
+Prescription.doctor = db.relationship('User', backref='prescriptions', foreign_keys=[Prescription.doctor_id])
+#Prescription.patient = db.relationship('Patient', foreign_keys=[Prescription.patient_id])
+LabRecord.doctor = db.relationship('User', backref='lab_records', foreign_keys=[LabRecord.doctor_id])
+#LabRecord.patient = db.relationship('Patient', foreign_keys=[LabRecord.patient_id])
 Message.sender = db.relationship('User', foreign_keys=[Message.sender_id], backref='sent_messages')
 Message.receiver = db.relationship('User', foreign_keys=[Message.receiver_id], backref='received_messages')

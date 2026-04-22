@@ -97,6 +97,37 @@
                     <button type="submit" class="btn btn-success">Book Appointment</button>
                 </form>
             </div>
+            
+            <!-- Prescriptions Section -->
+            <div class="card shadow p-4 mb-4" style="border-radius: 18px; border-left: 5px solid #FF6F00;">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h4 class="mb-0"><i class="fas fa-prescription-bottle-medical"></i> Prescriptions</h4>
+                    <a href="{{ url_for('prescriptions') }}" class="btn btn-warning btn-sm">
+                        <i class="fas fa-eye"></i> View All
+                    </a>
+                </div>
+                <p class="text-muted">Access your medical prescriptions from doctors</p>
+                <hr>
+                <a href="{{ url_for('prescriptions') }}" class="btn btn-outline-warning btn-lg w-100">
+                    <i class="fas fa-prescription-bottle-medical"></i> View My Prescriptions
+                </a>
+            </div>
+
+            <!-- Lab Records Section -->
+            <div class="card shadow p-4 mb-4" style="border-radius: 18px; border-left: 5px solid #F57C00;">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h4 class="mb-0"><i class="fas fa-flask"></i> Lab Records</h4>
+                    <a href="{{ url_for('lab_records') }}" class="btn btn-info btn-sm">
+                        <i class="fas fa-eye"></i> View All
+                    </a>
+                </div>
+                <p class="text-muted">Track your laboratory test results and medical reports</p>
+                <hr>
+                <a href="{{ url_for('lab_records') }}" class="btn btn-outline-info btn-lg w-100">
+                    <i class="fas fa-flask"></i> View My Lab Records
+                </a>
+            </div>
+
             <!-- Old Appointments -->
             <div class="card shadow p-4 mb-4" style="border-radius: 18px;">
                 <h4 class="mb-3"><i class="fas fa-calendar-alt"></i> Old Appointments</h4>
@@ -115,6 +146,7 @@
                     </li>
                 </ul>
             </div>
+
             <!-- Sample Data for Prescriptions -->
             <script>
                 const samplePrescriptions = [

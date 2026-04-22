@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+
+{% block title %}Add Lab Record{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2><i class="fas fa-flask"></i> Add Lab Test Record</h2>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card shadow" style="border-radius: 10px;">
+                <div class="card-body p-5">
+                    <form method="POST" action="{{ url_for('add_lab_record') }}">
+                        <!-- Patient Selection -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3"><i class="fas fa-user-check"></i> Patient Selection</h5>
+                            <div class="form-group mb-3">
+                                <label for="patient_id" class="form-label fw-bold">Select Patient</label>
+                                <select class="form-select form-select-lg" name="patient_id" id="patient_id" required>
+                                    <option value="">-- Choose a patient --</option>
+                                    {% for patient in patients %}
+                                        <option value="{{ patient.id }}">
+                                            {{ patient.user.name }} (ID: {{ patient.id }})
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Test Information -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3"><i class="fas fa-flask"></i> Test Information</h5>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="test_name" class="form-label fw-bold">Test Name</label>
+                                    <input type="text" class="form-control" name="test_name" 
+                                           placeholder="e.g., Blood Test, X-Ray, MRI, Ultrasound" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="hospital_name" class="form-label fw-bold">Hospital/Lab Name</label>
+                                    <input type="text" class="form-control" name="hospital_name" 
+                                           placeholder="e.g., Apollo Laboratory" required>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="hospital_location" class="form-label fw-bold">Hospital Location</label>
+                                    <input type="text" class="form-control" name="hospital_location" 
+                                           placeholder="e.g., Bangalore, India" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="overall_status" class="form-label fw-bold">Overall Status</label>
+                                    <select class="form-select" name="overall_status" required>
+                                        <option value="">-- Select Status --</option>
+                                        <option value="Normal">Normal</option>
+                                        <option value="Abnormal">Abnormal</option>
+                                        <option value="Pending">Pending</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" name="is_completed" id="is_completed" value="on">
+                                <label class="form-check-label" for="is_completed">
+                                    Mark as Completed
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Test Results Section -->
+                        <div class="mb-4">
+                            <h5 class="text-warning mb-3"><i class="fas fa-chart-line"></i> Test Results</h5>
+                            <p class="text-muted mb-3">Add test parameters and their results below.</p>
+                            <div id="results_container">
+                                <div class="result_item card p-3 mb-3" style="background-color: #fffbea; border-left: 4px solid #ffc107;">
+                                    <div class="row">
+                                        <div class="col-md-2 mb-2">
+                                            <label class="form-label fw-bold">Parameter</label>
+                                            <input type="text" class="form-control" name="result_parameter[]" 
+                                                   placeholder="e.g., Hemoglobin" required>
+                                        </div>
+                                        <div class="col-md-2 mb-2">
+                                            <label class="form-label fw-bold">Value</label>
+                                            <input type="text" class="form-control" name="result_value[]" 
+                                                   placeholder="e.g., 13" required>
+                                        </div>
+                                        <div class="col-md-1 mb-2">
+                                            <label class="form-label fw-bold">Unit</label>
+                                            <input type="text" class="form-control" name="result_unit[]" 
+                                                   placeholder="g/dL">
+                                        </div>
+                                        <div class="col-md-2 mb-2">
+                                            <label class="form-label fw-bold">Normal Range</label>
+                                            <input type="text" class="form-control" name="result_normal_range[]" 
+                                                   placeholder="e.g., 12-16">
+                                        </div>
+                                        <div class="col-md-2 mb-2">
+                                            <label class="form-label fw-bold">Status</label>
+                                            <select class="form-select" name="result_status[]" required>
+                                                <option value="Normal">Normal</option>
+                                                <option value="Abnormal">Abnormal</option>
+                                                <option value="Critical">Critical</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-1 d-flex align-items-end mb-2">
+                                            <button type="button" class="btn btn-outline-danger w-100" onclick="removeResult(this)">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-outline-warning" onclick="addResult()">
+                                <i class="fas fa-plus"></i> Add Another Parameter
+                            </button>
+                        </div>
+
+                        <!-- Additional Notes -->
+                        <div class="mb-4">
+                            <h5 class="text-info mb-3"><i class="fas fa-sticky-note"></i> Additional Notes</h5>
+                            <textarea class="form-control" name="notes" rows="3" 
+                                      placeholder="e.g., Follow-up required in 2 weeks, Patient should increase iron intake..."></textarea>
+                        </div>
+
+                        <!-- Submit Buttons -->
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('hospital_dashboard') }}" class="btn btn-secondary btn-lg">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-save"></i> Save Lab Record
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function addResult() {
+        const container = document.getElementById('results_container');
+        const resultHTML = `
+            <div class="result_item card p-3 mb-3" style="background-color: #fffbea; border-left: 4px solid #ffc107;">
+                <div class="row">
+                    <div class="col-md-2 mb-2">
+                        <label class="form-label fw-bold">Parameter</label>
+                        <input type="text" class="form-control" name="result_parameter[]" 
+                               placeholder="e.g., Hemoglobin">
+                    </div>
+                    <div class="col-md-2 mb-2">
+                        <label class="form-label fw-bold">Value</label>
+                        <input type="text" class="form-control" name="result_value[]" 
+                               placeholder="e.g., 13">
+                    </div>
+                    <div class="col-md-1 mb-2">
+                        <label class="form-label fw-bold">Unit</label>
+                        <input type="text" class="form-control" name="result_unit[]" 
+                               placeholder="g/dL">
+                    </div>
+                    <div class="col-md-2 mb-2">
+                        <label class="form-label fw-bold">Normal Range</label>
+                        <input type="text" class="form-control" name="result_normal_range[]" 
+                               placeholder="e.g., 12-16">
+                    </div>
+                    <div class="col-md-2 mb-2">
+                        <label class="form-label fw-bold">Status</label>
+                        <select class="form-select" name="result_status[]">
+                            <option value="Normal">Normal</option>
+                            <option value="Abnormal">Abnormal</option>
+                            <option value="Critical">Critical</option>
+                        </select>
+                    </div>
+                    <div class="col-md-1 d-flex align-items-end mb-2">
+                        <button type="button" class="btn btn-outline-danger w-100" onclick="removeResult(this)">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        container.insertAdjacentHTML('beforeend', resultHTML);
+    }
+
+    function removeResult(btn) {
+        btn.closest('.result_item').remove();
+    }
+</script>
+{% endblock %}
