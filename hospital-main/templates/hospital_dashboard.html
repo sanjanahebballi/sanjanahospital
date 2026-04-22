@@ -330,6 +330,62 @@
             </div>
         </div>
     </div>
+
+    <!-- Prescription Section -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <h4>Prescriptions</h4>
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Patient Name</th>
+                        <th>Doctor</th>
+                        <th>Prescription</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in medical_records %}
+                    <tr>
+                        <td>{{ record.patient.user.name }}</td>
+                        <td>{{ record.doctor.name }}</td>
+                        <td>{{ record.prescription }}</td>
+                        <td>
+                            <button class="btn btn-info btn-sm" onclick="viewPrescription({{ record.id }})">View</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Lab Records Section -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <h4>Lab Records</h4>
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Patient Name</th>
+                        <th>Test Name</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in medical_records %}
+                    <tr>
+                        <td>{{ record.patient.user.name }}</td>
+                        <td>{{ record.lab_results }}</td>
+                        <td>{{ record.visit_date }}</td>
+                        <td>{{ 'Completed' if record.lab_results else 'Pending' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
 {% endblock %}
 

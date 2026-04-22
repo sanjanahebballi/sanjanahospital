@@ -115,6 +115,123 @@
                     </li>
                 </ul>
             </div>
+            <!-- Sample Data for Prescriptions -->
+            <script>
+                const samplePrescriptions = [
+                    {
+                        doctor: "Dr. Sharma",
+                        date: "12 April 2026",
+                        disease: "Fever",
+                        medicines: [
+                            { name: "Paracetamol", dosage: "500mg", frequency: "Twice daily" },
+                            { name: "Azithromycin", dosage: "250mg", frequency: "Once daily" }
+                        ],
+                        notes: "Take rest and drink fluids"
+                    },
+                    {
+                        doctor: "Dr. Mehta",
+                        date: "10 March 2026",
+                        disease: "Diabetes",
+                        medicines: [
+                            { name: "Metformin", dosage: "500mg", frequency: "Twice daily" },
+                            { name: "Insulin", dosage: "10 units", frequency: "Before meals" }
+                        ],
+                        notes: "Monitor blood sugar levels regularly"
+                    }
+                ];
+
+                const sampleLabRecords = [
+                    {
+                        testName: "Blood Test",
+                        date: "10 April 2026, 10:30 AM",
+                        result: "Hemoglobin: 13 g/dL (Normal)",
+                        status: "Completed"
+                    },
+                    {
+                        testName: "Sugar Test",
+                        date: "10 April 2026, 11:00 AM",
+                        result: "Sugar: 180 mg/dL (High)",
+                        status: "Completed"
+                    }
+                ];
+
+                // Render sample data dynamically
+                document.addEventListener("DOMContentLoaded", () => {
+                    const prescriptionContainer = document.getElementById("prescription-container");
+                    const labRecordContainer = document.getElementById("lab-record-container");
+
+                    samplePrescriptions.forEach(prescription => {
+                        const prescriptionHTML = `
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <h5 class="card-title">${prescription.disease} - ${prescription.date}</h5>
+                                    <p class="card-text">Doctor: ${prescription.doctor}</p>
+                                    <ul>
+                                        ${prescription.medicines.map(med => `<li>${med.name} - ${med.dosage} - ${med.frequency}</li>`).join("")}
+                                    </ul>
+                                    <p class="card-text">Notes: ${prescription.notes}</p>
+                                </div>
+                            </div>
+                        `;
+                        prescriptionContainer.innerHTML += prescriptionHTML;
+                    });
+
+                    sampleLabRecords.forEach(record => {
+                        const labRecordHTML = `
+                            <tr>
+                                <td>${record.testName}</td>
+                                <td>${record.date}</td>
+                                <td>${record.result}</td>
+                                <td>${record.status}</td>
+                            </tr>
+                        `;
+                        labRecordContainer.innerHTML += labRecordHTML;
+                    });
+                });
+            </script>
+
+            <!-- Prescription Section -->
+            <div id="prescription-container"></div>
+
+            <!-- Lab Records Section -->
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Test Name</th>
+                        <th>Date</th>
+                        <th>Result</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="lab-record-container"></tbody>
+            </table>
+
+            <!-- Medical History Section -->
+            <div class="row mt-4">
+                <div class="col-12">
+                    <h4>Medical History</h4>
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Visit Type</th>
+                                <th>Diagnosis</th>
+                                <th>Symptoms</th>
+                                <th>Treatment</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for record in medical_records %}
+                            <tr>
+                                <td>{{ record.visit_type }}</td>
+                                <td>{{ record.diagnosis }}</td>
+                                <td>{{ record.symptoms }}</td>
+                                <td>{{ record.treatment }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 </div>

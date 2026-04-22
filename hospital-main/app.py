@@ -263,32 +263,71 @@ def messages():
 @app.route('/send_message', methods=['POST'])
 @login_required
 def send_message():
-    receiver_id = request.form.get('receiver_id')
-    subject = request.form.get('subject')
-    message_text = request.form.get('message')
-    is_urgent = request.form.get('is_urgent', type=bool)
-    
-    message = Message(
-        sender_id=current_user.id,
-        receiver_id=receiver_id,
-        subject=subject,
-        message=message_text,
-        is_urgent=is_urgent
-    )
-    db.session.add(message)
-    
-    # Create notification for receiver
-    notification = Notification(
-        user_id=receiver_id,
-        title=f"New message from {current_user.name}",
-        message=subject,
-        type='message',
-        priority='high' if is_urgent else 'normal'
-    )
-    db.session.add(notification)
+    data = request.json
+    sender_id = current_user.id
+    receiver_id = data.get('receiver_id')
+    subject = data.get('subject', '')
+    message = data.get('message')
+
+    if not message or not receiver_id:
+        return jsonify({'error': 'Message and receiver_id are required'}), 400
+
+    new_message = Message(sender_id=sender_id, receiver_id=receiver_id, subject=subject, message=message)
+    db.session.add(new_message)
     db.session.commit()
-    
-    return jsonify({'message': 'Message sent successfully'})
+
+    return jsonify({'message': 'Message sent successfully'}), 201
+
+@app.route('/api/messages', methods=['GET'])
+@login_required
+def get_messages():
+    messages = Message.query.filter_by(receiver_id=current_user.id).all()
+    return jsonify([{
+        'id': msg.id,
+        'sender': msg.sender.name,
+        'subject': msg.subject,
+        'message': msg.message,
+        'sent_at': msg.sent_at
+    } for msg in messages]), 200
+
+# Prescriptions API
+@app.route('/api/prescriptions/<int:patient_id>', methods=['GET'])
+@login_required
+def get_prescriptions(patient_id):
+    prescriptions = MedicalRecord.query.filter_by(patient_id=patient_id).all()
+    return jsonify([{
+        'doctor': record.doctor.name,
+        'prescription': record.prescription,
+        'visit_date': record.visit_date,
+        'notes': record.visit_notes
+    } for record in prescriptions]), 200
+
+# Lab Records API
+@app.route('/api/lab_records/<int:patient_id>', methods=['GET'])
+@login_required
+def get_lab_records(patient_id):
+    lab_records = MedicalRecord.query.filter_by(patient_id=patient_id).all()
+    return jsonify([{
+        'test_name': record.lab_results,
+        'visit_date': record.visit_date,
+        'status': 'Completed' if record.lab_results else 'Pending'
+    } for record in lab_records]), 200
+
+# Patient Details API
+@app.route('/api/patient_details/<int:patient_id>', methods=['GET'])
+@login_required
+def get_patient_details(patient_id):
+    patient = Patient.query.get_or_404(patient_id)
+    user = patient.user
+
+    return jsonify({
+        'name': user.name,
+        'age': (datetime.utcnow() - user.created_at).days // 365,
+        'email': user.email,
+        'phone': user.email,  # Assuming phone is stored in email for now
+        'disease': patient.disease,
+        'location': patient.assigned_hospital
+    }), 200
 
 @app.route('/update_patient/<int:patient_id>', methods=['POST'])
 @login_required
